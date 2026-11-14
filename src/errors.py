@@ -7,3 +7,7 @@ class AppError(Exception):
 
 class ConfigError(AppError):
     """Ошибка в параметрах, заданных пользователем."""
+
+
+class RepositoryError(AppError):
+    """Ошибка при получении данных из репозитория."""
