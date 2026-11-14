@@ -5,21 +5,31 @@ import sys
 from src.cargo_index import fetch_dependencies
 from src.config import MODE_TEST, parse_config
 from src.errors import AppError, RepositoryError
-from src.graph import build_graph, find_cycle_nodes, lookup_in
+from src.graph import (
+    build_graph,
+    find_cycle_nodes,
+    lookup_in,
+    reverse_dependencies,
+)
 from src.graph_file import load_graph_file
 
 EXIT_OK = 0
 EXIT_ERROR = 2
 
 
-def make_test_getter(config):
-    """Создать функцию зависимостей по файлу тестового репозитория."""
+def load_test_repository(config):
+    """Загрузить тестовый репозиторий и проверить, что в нём есть пакет."""
     repository = load_graph_file(config.repo)
     if config.package not in repository:
         raise RepositoryError(
             f"пакет {config.package} не описан в файле {config.repo}"
         )
-    return lookup_in(repository)
+    return repository
+
+
+def make_test_getter(config):
+    """Создать функцию зависимостей по файлу тестового репозитория."""
+    return lookup_in(load_test_repository(config))
 
 
 def make_remote_getter(config):
@@ -54,8 +64,28 @@ def print_cycles(graph):
         print("Циклических зависимостей нет")
 
 
+def print_reverse(package, names):
+    """Вывести пакеты, которые зависят от заданного."""
+    print(f"Обратные зависимости пакета {package} (кто от него зависит):")
+    for name in names:
+        print(f"  {name}")
+    if not names:
+        print("  (нет)")
+
+
+def run_reverse(config):
+    """Найти и вывести обратные зависимости пакета."""
+    repository = load_test_repository(config)
+    print_reverse(config.package, reverse_dependencies(
+        repository, config.package
+    ))
+
+
 def run(config):
-    """Построить граф зависимостей пакета и вывести его."""
+    """Выполнить работу: обратные зависимости или граф зависимостей."""
+    if config.reverse:
+        run_reverse(config)
+        return
     graph = build_graph(config.package, make_getter(config))
     print_graph(config.package, graph)
     print_cycles(graph)

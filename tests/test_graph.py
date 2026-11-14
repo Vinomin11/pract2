@@ -2,7 +2,13 @@
 
 import unittest
 
-from src.graph import build_graph, find_cycle_nodes, lookup_in
+from src.graph import (
+    build_graph,
+    find_cycle_nodes,
+    lookup_in,
+    reverse_dependencies,
+    reverse_graph,
+)
 
 
 class BuildGraphTest(unittest.TestCase):
@@ -61,6 +67,32 @@ class CycleNodesTest(unittest.TestCase):
     def test_self_dependency_is_cycle(self):
         """Зависимость пакета от самого себя считается циклом."""
         self.assertEqual(find_cycle_nodes({"A": ["A"]}), ["A"])
+
+
+class ReverseTest(unittest.TestCase):
+    """Проверки обратных зависимостей."""
+
+    def setUp(self):
+        """Подготовить граф-ромб."""
+        self.graph = {"A": ["B", "C"], "B": ["D"], "C": ["D"], "D": []}
+
+    def test_reverse_graph(self):
+        """Граф переворачивается: у D появляются B и C."""
+        self.assertEqual(reverse_graph(self.graph)["D"], ["B", "C"])
+
+    def test_transitive(self):
+        """От D зависят B и C напрямую и A через них."""
+        result = reverse_dependencies(self.graph, "D")
+        self.assertEqual(result, ["B", "C", "A"])
+
+    def test_nobody_depends(self):
+        """От корневого пакета никто не зависит."""
+        self.assertEqual(reverse_dependencies(self.graph, "A"), [])
+
+    def test_cycle(self):
+        """Пакет в цикле зависит сам от себя и попадает в свой список."""
+        graph = {"A": ["B"], "B": ["A"]}
+        self.assertEqual(reverse_dependencies(graph, "A"), ["B", "A"])
 
 
 if __name__ == "__main__":

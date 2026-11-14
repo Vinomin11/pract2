@@ -51,3 +51,33 @@ def depends_on_itself(graph, name):
 def find_cycle_nodes(graph):
     """Вернуть пакеты, участвующие в циклических зависимостях."""
     return [name for name in graph if depends_on_itself(graph, name)]
+
+
+def reverse_graph(graph):
+    """Перевернуть граф: для каждого пакета список тех, кто от него зависит."""
+    reverse = {}
+    for name, dependencies in graph.items():
+        for dependency in dependencies:
+            reverse.setdefault(dependency, []).append(name)
+    return reverse
+
+
+def reverse_dependencies(graph, package):
+    """Найти пакеты, которые зависят от package прямо или через другие.
+
+    Используется тот же обход в ширину, что и для прямых зависимостей,
+    но по перевёрнутому графу. Ближайшие пакеты идут первыми.
+
+    Args:
+        graph: полный граф репозитория {пакет: список зависимостей}.
+        package: пакет, для которого ищутся обратные зависимости.
+
+    Returns:
+        Список имён пакетов. Сам пакет входит в него, только если он
+        зависит от себя (участвует в цикле).
+    """
+    found = build_graph(package, lookup_in(reverse_graph(graph)))
+    result = [name for name in found if name != package]
+    if depends_on_itself(graph, package):
+        result.append(package)
+    return result

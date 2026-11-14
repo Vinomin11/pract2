@@ -24,6 +24,7 @@ class Config:
     package: str
     repo: str
     mode: str
+    reverse: bool = False
 
 
 def build_parser():
@@ -42,6 +43,10 @@ def build_parser():
     parser.add_argument(
         "--mode", "-m", default=MODE_REMOTE,
         help="режим работы: remote (по умолчанию) или test",
+    )
+    parser.add_argument(
+        "--reverse", action="store_true",
+        help="вывести обратные зависимости пакета (только режим test)",
     )
     return parser
 
@@ -86,6 +91,16 @@ def check_repo(repo, mode):
         )
 
 
+def check_reverse(reverse, mode):
+    """Проверить, что обратные зависимости запрошены в режиме test.
+
+    В реестре нет списка всех пакетов, поэтому узнать, кто зависит
+    от пакета, можно только по полностью известному тестовому репозиторию.
+    """
+    if reverse and mode != MODE_TEST:
+        raise ConfigError("опция --reverse работает только в режиме test")
+
+
 def parse_config(argv=None):
     """Разобрать параметры командной строки и проверить их.
 
@@ -99,8 +114,12 @@ def parse_config(argv=None):
         ConfigError: если какой-либо параметр задан неверно.
     """
     args = build_parser().parse_args(argv)
-    config = Config(package=args.package, repo=args.repo, mode=args.mode)
+    config = Config(
+        package=args.package, repo=args.repo, mode=args.mode,
+        reverse=args.reverse,
+    )
     check_mode(config.mode)
     check_package(config.package, config.mode)
     check_repo(config.repo, config.mode)
+    check_reverse(config.reverse, config.mode)
     return config
