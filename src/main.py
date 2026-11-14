@@ -12,6 +12,7 @@ from src.graph import (
     reverse_dependencies,
 )
 from src.graph_file import load_graph_file
+from src.plantuml import render_png, save_text, show_image, to_plantuml
 
 EXIT_OK = 0
 EXIT_ERROR = 2
@@ -81,6 +82,20 @@ def run_reverse(config):
     ))
 
 
+def visualize(config, graph):
+    """Вывести текст диаграммы PlantUML, сохранить её и показать картинку."""
+    text = to_plantuml(graph, config.package)
+    print("Диаграмма PlantUML:")
+    print(text, end="")
+    if config.output:
+        save_text(config.output, text)
+        print(f"Диаграмма сохранена в {config.output}")
+    if config.plantuml_jar:
+        png_path = render_png(config.output, config.plantuml_jar)
+        print(f"Изображение сохранено в {png_path}")
+        show_image(png_path)
+
+
 def run(config):
     """Выполнить работу: обратные зависимости или граф зависимостей."""
     if config.reverse:
@@ -89,6 +104,7 @@ def run(config):
     graph = build_graph(config.package, make_getter(config))
     print_graph(config.package, graph)
     print_cycles(graph)
+    visualize(config, graph)
 
 
 def main(argv=None):

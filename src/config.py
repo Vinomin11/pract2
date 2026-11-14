@@ -25,6 +25,8 @@ class Config:
     repo: str
     mode: str
     reverse: bool = False
+    output: str = None
+    plantuml_jar: str = None
 
 
 def build_parser():
@@ -47,6 +49,14 @@ def build_parser():
     parser.add_argument(
         "--reverse", action="store_true",
         help="вывести обратные зависимости пакета (только режим test)",
+    )
+    parser.add_argument(
+        "--output", "-o",
+        help="файл для сохранения диаграммы PlantUML (например, graph.puml)",
+    )
+    parser.add_argument(
+        "--plantuml-jar",
+        help="путь к plantuml.jar: построить PNG и показать его на экране",
     )
     return parser
 
@@ -101,6 +111,16 @@ def check_reverse(reverse, mode):
         raise ConfigError("опция --reverse работает только в режиме test")
 
 
+def check_plantuml(output, plantuml_jar):
+    """Проверить параметры построения изображения диаграммы."""
+    if not plantuml_jar:
+        return
+    if not os.path.isfile(plantuml_jar):
+        raise ConfigError(f"файл PlantUML не найден: {plantuml_jar}")
+    if not output:
+        raise ConfigError("для --plantuml-jar нужно указать --output")
+
+
 def parse_config(argv=None):
     """Разобрать параметры командной строки и проверить их.
 
@@ -116,10 +136,12 @@ def parse_config(argv=None):
     args = build_parser().parse_args(argv)
     config = Config(
         package=args.package, repo=args.repo, mode=args.mode,
-        reverse=args.reverse,
+        reverse=args.reverse, output=args.output,
+        plantuml_jar=args.plantuml_jar,
     )
     check_mode(config.mode)
     check_package(config.package, config.mode)
     check_repo(config.repo, config.mode)
     check_reverse(config.reverse, config.mode)
+    check_plantuml(config.output, config.plantuml_jar)
     return config

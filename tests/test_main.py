@@ -3,6 +3,7 @@
 import contextlib
 import io
 import os
+import tempfile
 import unittest
 
 from src.main import EXIT_ERROR, EXIT_OK, main
@@ -72,6 +73,33 @@ class ReverseModeTest(unittest.TestCase):
         code, _, err = run_app("Q", "simple.txt", "--reverse")
         self.assertEqual(code, EXIT_ERROR)
         self.assertIn("не описан", err)
+
+
+class VisualizeTest(unittest.TestCase):
+    """Проверки вывода и сохранения диаграммы."""
+
+    def test_plantuml_text_is_printed(self):
+        """Текст диаграммы выводится на экран."""
+        _, out, _ = run_app("A", "simple.txt")
+        self.assertIn("@startuml", out)
+        self.assertIn("n0 --> n1", out)
+
+    def test_output_file_is_saved(self):
+        """С опцией --output диаграмма сохраняется в файл."""
+        with tempfile.TemporaryDirectory() as folder:
+            target = os.path.join(folder, "graph.puml")
+            code, _, _ = run_app("A", "cycle.txt", "-o", target)
+            with open(target, encoding="utf-8") as file:
+                saved = file.read()
+        self.assertEqual(code, EXIT_OK)
+        self.assertTrue(saved.startswith("@startuml"))
+
+    def test_output_in_missing_folder(self):
+        """Если папки для файла нет, выводится ошибка."""
+        target = os.path.join("no_such_folder", "graph.puml")
+        code, _, err = run_app("A", "simple.txt", "-o", target)
+        self.assertEqual(code, EXIT_ERROR)
+        self.assertIn("не удалось сохранить", err)
 
 
 if __name__ == "__main__":

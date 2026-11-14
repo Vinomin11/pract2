@@ -11,3 +11,7 @@ class ConfigError(AppError):
 
 class RepositoryError(AppError):
     """Ошибка при получении данных из репозитория."""
+
+
+class RenderError(AppError):
+    """Ошибка при сохранении или отрисовке диаграммы."""
